@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver import ChromeOptions
 from webdriver_manager.chrome import ChromeDriverManager
+from unidecode import unidecode
 
 from source.utils import save_to_json
 
@@ -32,12 +33,32 @@ class Scraper:
             except:
                 self.driver.get_screenshot_as_file("error_screenshot.png")
 
+            repwidget_data = self.driver.find_element_by_class_name("b-catalog__repwidget-list").text
+
             # Get the relevant data
-            page = {'title': self.driver.find_element_by_class_name("b-catalog__report-title").text,
-                    'summary': self.driver.find_element_by_class_name("b-report__summary-text").text,
-                    'disproof': self.driver.find_element_by_class_name("b-report__disproof-text").text,
-                    'repwidget': self.driver.find_element_by_class_name("b-catalog__repwidget-list").text} 
-            
+            page = {'title': unidecode(self.driver.find_element_by_class_name("b-catalog__report-title").text),
+                    'summary': unidecode(self.driver.find_element_by_class_name("b-report__summary-text").text),
+                    'disproof': unidecode(self.driver.find_element_by_class_name("b-report__disproof-text").text),
+                    'reported_in': repwidget_data.split("REPORTED IN")[1].split("\n")[1].strip() 
+                                    if "REPORTED IN" in repwidget_data else "",
+                    'publication_date': repwidget_data.split("DATE OF PUBLICATION")[1].split("\n")[1].strip() 
+                                        if "DATE OF PUBLICATION" in repwidget_data else "",
+                    'article_language': repwidget_data.split("ARTICLE LANGUAGE(S)")[1].split("\n")[1].strip() 
+                                        if "ARTICLE LANGUAGE(S)" in repwidget_data else "",
+                    'regions_discussed': repwidget_data.split("REGIONS DISCUSSED IN THE DISINFORMATION")[1].split("\n")[1].strip() 
+                                        if "REGIONS DISCUSSED IN THE DISINFORMATION" in repwidget_data else "",
+                    'keywords': repwidget_data.split("KEYWORDS")[1].split("\n")[1].strip()
+                                if "KEYWORDS" in repwidget_data else ""} 
+
+            # Get archived links
+            archived_links = []
+            link_classes = self.driver.find_elements_by_class_name("b-catalog__link")
+
+            for link_class in link_classes:
+                archived_links.append(link_class.find_element_by_tag_name("span").find_element_by_tag_name("a").get_attribute("href"))
+
+            page['archived_links'] = archived_links
+
             data.append(page)
 
         # Close the browser
