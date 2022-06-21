@@ -1,11 +1,12 @@
-from selenium import webdriver
 from selenium.webdriver import ChromeOptions
-from webdriver_manager.chrome import ChromeDriverManager
+import undetected_chromedriver as uc
 from unidecode import unidecode
+import datetime
+import time
 
 from source.utils import save_to_json
 
-NUM_PAGES = 5
+NUM_PAGES = 100
 
 class Scraper:
     def __init__(self, working_dir):
@@ -18,7 +19,8 @@ class Scraper:
         self.options.add_argument(f'user-agent={user_agent}')
 
         # Create a new Chrome session
-        self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=self.options)
+        self.driver = uc.Chrome(options=self.options)
+        # self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=self.options)
 
     def run(self):
         links = self.get_page_links(NUM_PAGES)
@@ -29,9 +31,10 @@ class Scraper:
         # Run the scraper on each link
         for link in links:
             try:
-                self.driver.get(link)
+                self.get_page(link)
             except:
                 self.driver.get_screenshot_as_file("error_screenshot.png")
+                break
 
             repwidget_data = self.driver.find_element_by_class_name("b-catalog__repwidget-list").text
 
@@ -75,7 +78,7 @@ class Scraper:
 
         # Go over all table pages
         for idx in range(1, num_pages + 1):
-            self.driver.get(pagelink)            
+            self.get_page(pagelink)
             rows = self.driver.find_elements_by_class_name("disinfo-db-post")
 
             for row in rows:
@@ -84,3 +87,10 @@ class Scraper:
             pagelink = f"https://euvsdisinfo.eu/disinformation-cases/?offset={idx * 10})"
 
         return links
+    
+    def get_page(self, link):
+        self.driver.get(link)
+        print(f'Time of the request: {datetime.datetime.now().time()}')
+
+        # Sleep for 2 seconds to avoid rate limiting
+        time.sleep(2)
