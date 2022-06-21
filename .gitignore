@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# VSCode ignores
+.vscode/
+
+# Input / output ignores
+source/input
+source/output
