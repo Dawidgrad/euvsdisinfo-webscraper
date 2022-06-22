@@ -1,3 +1,4 @@
+import random
 from selenium.webdriver import ChromeOptions
 import undetected_chromedriver as uc
 from unidecode import unidecode
@@ -6,11 +7,13 @@ import time
 
 from source.utils import save_to_json
 
-NUM_PAGES = 100
+NUM_PAGES = 2
 
 class Scraper:
-    def __init__(self, working_dir):
+    def __init__(self, working_dir, links_only, articles_only):
         self.working_dir = working_dir
+        self.links_only = links_only
+        self.articles_only = articles_only
         self.options = ChromeOptions()
 
         # Run in headless mode
@@ -57,8 +60,18 @@ class Scraper:
             archived_links = []
             link_classes = self.driver.find_elements_by_class_name("b-catalog__link")
 
+            print(page['title'])
+            print('before loop')
+
             for link_class in link_classes:
-                archived_links.append(link_class.find_element_by_tag_name("span").find_element_by_tag_name("a").get_attribute("href"))
+                print(link_class.tag_name)
+                print('before span')
+                span = link_class.find_element_by_tag_name("span")
+                print('after span')
+                print(span.tag_name)
+                print('after span print')
+                archived_links.append(span.find_element_by_tag_name("a").get_attribute("href"))
+                print('after find_element_by_tag_name')
 
             page['archived_links'] = archived_links
 
@@ -73,7 +86,7 @@ class Scraper:
     # Find links in the table from the specified number of (table) pages
     def get_page_links(self, num_pages=1):
         print(f'Getting links from {num_pages} pages')
-        pagelink = "https://euvsdisinfo.eu/disinformation-cases/"
+        pagelink = "https://euvsdisinfo.eu/disinformation-cases/?per_page=100"
         links = []
 
         # Go over all table pages
@@ -84,13 +97,14 @@ class Scraper:
             for row in rows:
                 links.append(row.find_element_by_tag_name("a").get_attribute("href"))
 
-            pagelink = f"https://euvsdisinfo.eu/disinformation-cases/?offset={idx * 10})"
+            pagelink = f"https://euvsdisinfo.eu/disinformation-cases/?offset={idx * 10}&per_page=100)"
 
         return links
     
     def get_page(self, link):
         self.driver.get(link)
-        print(f'Time of the request: {datetime.datetime.now().time()}')
+        print(f'Time of the request to {link}: {datetime.datetime.now().time()}')
 
-        # Sleep for 2 seconds to avoid rate limiting
-        time.sleep(2)
+        # Sleep for random number of seconds to avoid rate limiting
+        sleep_time = random.randint(40,60)
+        time.sleep(sleep_time)
